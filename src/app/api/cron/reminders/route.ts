@@ -83,5 +83,47 @@ export async function GET(req: NextRequest) {
     assignmentRemindersSent += 1;
   }
 
-  return NextResponse.json({ feeRemindersSent, assignmentRemindersSent });
+  // --- Unread direct messages, still unread after 3+ hours ---
+  const staleThreshold = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const unreadMessages = await prisma.message.findMany({
+    where: { readAt: null, createdAt: { lt: staleThreshold } },
+    include: { sender: { select: { firstName: true, lastName: true, role: true } } },
+  });
+  const byRecipient = new Map<string, number>();
+  for (const m of unreadMessages) {
+    byRecipient.set(m.recipientId, (byRecipient.get(m.recipientId) ?? 0) + 1);
+  }
+  let unreadMessageRemindersSent = 0;
+  for (const [recipientId, count] of byRecipient) {
+    await notifyUsers([recipientId], {
+      title: "You have unread messages",
+      body: `You haven't replied to ${count} message${count === 1 ? "" : "s"} yet.`,
+      link: "/dashboard/messages",
+    });
+    unreadMessageRemindersSent += 1;
+  }
+
+  // --- Community messages a member hasn't seen after 3+ hours ---
+  const memberships = await prisma.communityMember.findMany({
+    include: { community: { include: { messages: { orderBy: { createdAt: "desc" }, take: 1 } } } },
+  });
+  let unreadCommunityRemindersSent = 0;
+  for (const membership of memberships) {
+    const latest = membership.community.messages[0];
+    if (!latest || latest.createdAt > staleThreshold) continue;
+    if (membership.lastReadAt && membership.lastReadAt >= latest.createdAt) continue;
+    await notifyUsers([membership.userId], {
+      title: `New activity in ${membership.community.name}`,
+      body: "You have unread messages in this community.",
+      link: "/dashboard/messages",
+    });
+    unreadCommunityRemindersSent += 1;
+  }
+
+  return NextResponse.json({
+    feeRemindersSent,
+    assignmentRemindersSent,
+    unreadMessageRemindersSent,
+    unreadCommunityRemindersSent,
+  });
 }

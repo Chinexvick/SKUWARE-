@@ -5,8 +5,9 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { EmojiPicker } from "@/components/ui/EmojiPicker";
+import { EmojiTray } from "@/components/ui/EmojiTray";
 import { MessageBody } from "@/components/ui/MessageBody";
+import { MessageReactions, type ReactionSummary } from "@/components/ui/MessageReactions";
 import { displayName } from "@/lib/displayName";
 
 interface DirectoryUser {
@@ -27,12 +28,14 @@ interface DirectMessage {
   body: string;
   senderId: string;
   createdAt: string;
+  reactions: ReactionSummary[];
 }
 interface Community {
   id: string;
   name: string;
   description: string | null;
   _count: { members: number };
+  hasUnread?: boolean;
 }
 interface CommunityMember {
   id: string;
@@ -44,6 +47,7 @@ interface CommunityMessage {
   body: string;
   createdAt: string;
   sender: { id: string; firstName: string; lastName: string; role: string; avatarUrl: string | null };
+  reactions: ReactionSummary[];
 }
 interface Klass {
   id: string;
@@ -158,15 +162,14 @@ function DirectMessagesTab() {
     setError(null);
   }
 
-  async function send(e: FormEvent) {
-    e.preventDefault();
-    if (!text.trim() || !active) return;
+  async function sendBody(body: string) {
+    if (!body.trim() || !active) return;
     setSending(true);
     setError(null);
     const res = await fetch("/api/communication/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recipientId: active.id, body: text }),
+      body: JSON.stringify({ recipientId: active.id, body }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
@@ -178,6 +181,22 @@ function DirectMessagesTab() {
       setError({ message: data.error ?? "Could not send that message.", flaggedWord: data.flaggedWord });
     }
     setSending(false);
+  }
+
+  function send(e: FormEvent) {
+    e.preventDefault();
+    sendBody(text);
+  }
+
+  async function toggleReaction(messageId: string, emoji: string) {
+    const res = await fetch(`/api/communication/messages/${messageId}/reactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji }),
+    });
+    if (!res.ok) return;
+    const { reactions } = await res.json();
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
   }
 
   return (
@@ -262,13 +281,15 @@ function DirectMessagesTab() {
             </div>
             <div className="flex-1 space-y-2 overflow-y-auto pr-1">
               {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm ${
-                    m.senderId === active.id ? "bg-brand-light text-black" : "ml-auto bg-black text-white"
-                  }`}
-                >
-                  <MessageBody text={m.body} />
+                <div key={m.id} className={`flex flex-col ${m.senderId === active.id ? "items-start" : "items-end"}`}>
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm ${
+                      m.senderId === active.id ? "bg-brand-light text-black" : "bg-black text-white"
+                    }`}
+                  >
+                    <MessageBody text={m.body} />
+                  </div>
+                  <MessageReactions reactions={m.reactions} onToggle={(emoji) => toggleReaction(m.id, emoji)} />
                 </div>
               ))}
               {messages.length === 0 && <p className="text-sm text-gray-500">No messages yet — say hello.</p>}
@@ -279,15 +300,15 @@ function DirectMessagesTab() {
                 <ModerationError message={error.message} flaggedWord={error.flaggedWord} />
               </div>
             )}
-            <form onSubmit={send} className={`mt-3 flex gap-2 ${error ? "animate-shake" : ""}`}>
+            <form onSubmit={send} className={`mt-3 flex items-center gap-2 ${error ? "animate-shake" : ""}`}>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Type a message…"
-                className="flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
+                className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
               />
-              <EmojiPicker onPick={(code) => setText((t) => `${t} :${code}: `)} />
-              <Button type="submit" loading={sending} disabled={!text.trim()}>
+              <EmojiTray onPick={(token) => sendBody(token)} />
+              <Button type="submit" loading={sending} disabled={!text.trim()} className="shrink-0">
                 Send
               </Button>
             </form>
@@ -589,25 +610,42 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function send(e: FormEvent) {
-    e.preventDefault();
-    if (!text.trim() || !active) return;
+  async function sendBody(body: string) {
+    if (!body.trim() || !active) return;
     setSending(true);
     setError(null);
     const res = await fetch(`/api/communities/${active.id}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: text }),
+      body: JSON.stringify({ body }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setText("");
       const refreshed = await fetch(`/api/communities/${active.id}/messages`);
       setMessages((await refreshed.json()).messages);
+      load();
     } else {
       setError({ message: data.error ?? "Could not send that message.", flaggedWord: data.flaggedWord });
     }
     setSending(false);
+  }
+
+  function send(e: FormEvent) {
+    e.preventDefault();
+    sendBody(text);
+  }
+
+  async function toggleReaction(messageId: string, emoji: string) {
+    if (!active) return;
+    const res = await fetch(`/api/communities/${active.id}/messages/${messageId}/reactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji }),
+    });
+    if (!res.ok) return;
+    const { reactions } = await res.json();
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
   }
 
   return (
@@ -636,12 +674,15 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
               <button
                 key={c.id}
                 onClick={() => setActive(c)}
-                className={`flex w-full flex-col items-start px-3 py-2.5 text-left transition ${
+                className={`flex w-full items-center gap-2 px-3 py-2.5 text-left transition ${
                   active?.id === c.id ? "bg-brand-yellow/20" : "hover:bg-brand-light"
                 }`}
               >
-                <span className="text-sm font-semibold text-black">{c.name}</span>
-                <span className="text-xs text-gray-500">{c._count.members} members</span>
+                {c.hasUnread && <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" aria-label="Unread" />}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-black">{c.name}</span>
+                  <span className="block text-xs text-gray-500">{c._count.members} members</span>
+                </span>
               </button>
             ))
           )}
@@ -671,9 +712,12 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
               {messages.map((m) => (
                 <div key={m.id} className="flex items-start gap-2">
                   <Avatar user={m.sender} size={30} />
-                  <div className="max-w-[80%] rounded-2xl bg-brand-light px-3.5 py-2 text-sm text-black">
-                    <p className="mb-0.5 text-xs font-semibold text-gray-500">{displayName(m.sender)}</p>
-                    <MessageBody text={m.body} />
+                  <div className="min-w-0 max-w-[80%]">
+                    <div className="rounded-2xl bg-brand-light px-3.5 py-2 text-sm text-black">
+                      <p className="mb-0.5 text-xs font-semibold text-gray-500">{displayName(m.sender)}</p>
+                      <MessageBody text={m.body} />
+                    </div>
+                    <MessageReactions reactions={m.reactions} onToggle={(emoji) => toggleReaction(m.id, emoji)} />
                   </div>
                 </div>
               ))}
@@ -685,15 +729,15 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
                 <ModerationError message={error.message} flaggedWord={error.flaggedWord} />
               </div>
             )}
-            <form onSubmit={send} className={`mt-3 flex gap-2 ${error ? "animate-shake" : ""}`}>
+            <form onSubmit={send} className={`mt-3 flex items-center gap-2 ${error ? "animate-shake" : ""}`}>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Message the community…"
-                className="flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
+                className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
               />
-              <EmojiPicker onPick={(code) => setText((t) => `${t} :${code}: `)} />
-              <Button type="submit" loading={sending} disabled={!text.trim()}>
+              <EmojiTray onPick={(token) => sendBody(token)} />
+              <Button type="submit" loading={sending} disabled={!text.trim()} className="shrink-0">
                 Send
               </Button>
             </form>

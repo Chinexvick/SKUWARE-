@@ -27,13 +27,29 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }),
     prisma.communityMessage.findMany({
       where: { communityId: id },
-      include: { sender: { select: { id: true, firstName: true, lastName: true, role: true, avatarUrl: true } } },
+      include: {
+        sender: { select: { id: true, firstName: true, lastName: true, role: true, avatarUrl: true } },
+        reactions: { select: { emoji: true, userId: true } },
+      },
       orderBy: { createdAt: "asc" },
       take: 300,
     }),
   ]);
 
-  return NextResponse.json({ community, messages, isAdmin: membership.isAdmin });
+  await prisma.communityMember.update({ where: { id: membership.id }, data: { lastReadAt: new Date() } });
+
+  const withReactionSummary = messages.map((m) => {
+    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>();
+    for (const r of m.reactions) {
+      const bucket = grouped.get(r.emoji) ?? { emoji: r.emoji, count: 0, reactedByMe: false };
+      bucket.count += 1;
+      if (r.userId === user.id) bucket.reactedByMe = true;
+      grouped.set(r.emoji, bucket);
+    }
+    return { ...m, reactions: Array.from(grouped.values()) };
+  });
+
+  return NextResponse.json({ community, messages: withReactionSummary, isAdmin: membership.isAdmin });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

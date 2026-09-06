@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ExportCsvButton } from "@/components/ui/ExportCsvButton";
 
 interface Arm {
   id: string;
@@ -51,6 +52,7 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [invite, setInvite] = useState<{ email: string; password: string } | null>(null);
+  const [exportClassId, setExportClassId] = useState("all");
 
   async function load() {
     setLoading(true);
@@ -105,11 +107,26 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-lg border border-gray-300 px-3.5 py-2 text-sm sm:max-w-sm"
         />
-        {canEdit && (
-          <Button className="w-full sm:w-auto" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? "Cancel" : "Add student"}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2 sm:items-center">
+          <select
+            value={exportClassId}
+            onChange={(e) => setExportClassId(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All classes</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <ExportCsvButton href={`/api/people/students/export?classId=${exportClassId}`} />
+          {canEdit && (
+            <Button className="w-full sm:w-auto" onClick={() => setShowForm((v) => !v)}>
+              {showForm ? "Cancel" : "Add student"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}

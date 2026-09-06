@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ExportCsvButton } from "@/components/ui/ExportCsvButton";
 
 interface Assignment {
   id: string;
   subject: { name: string };
-  class: { name: string };
+  class: { id: string; name: string };
   arm: { name: string } | null;
   term: { name: string; isCurrent: boolean };
 }
@@ -42,12 +43,15 @@ export function TeacherClassesClient() {
           <p className="mb-3 text-xs text-gray-400">
             {a.term.name} {a.term.isCurrent && <span className="font-semibold text-black">· current</span>}
           </p>
-          <Link
-            href={`/dashboard/teacher/grading?assignmentId=${a.id}`}
-            className="inline-block rounded-lg bg-brand-yellow px-3 py-1.5 text-xs font-bold text-black hover:brightness-95"
-          >
-            Enter scores
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/dashboard/teacher/grading?assignmentId=${a.id}`}
+              className="inline-flex items-center rounded-lg bg-brand-yellow px-3 py-1.5 text-xs font-bold text-black hover:brightness-95"
+            >
+              Enter scores
+            </Link>
+            <ExportCsvButton href={`/api/people/students/export?classId=${a.class.id}`} label="Export class CSV" />
+          </div>
         </Card>
       ))}
     </div>

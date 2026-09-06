@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     include: {
       sender: { select: { id: true, firstName: true, lastName: true, role: true } },
       recipient: { select: { id: true, firstName: true, lastName: true, role: true } },
+      reactions: { select: { emoji: true, userId: true } },
     },
     orderBy: { createdAt: "asc" },
     take: 200,
@@ -33,7 +34,18 @@ export async function GET(req: NextRequest) {
     data: { readAt: new Date() },
   });
 
-  return NextResponse.json({ messages });
+  const withReactionSummary = messages.map((m) => {
+    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>();
+    for (const r of m.reactions) {
+      const bucket = grouped.get(r.emoji) ?? { emoji: r.emoji, count: 0, reactedByMe: false };
+      bucket.count += 1;
+      if (r.userId === user.id) bucket.reactedByMe = true;
+      grouped.set(r.emoji, bucket);
+    }
+    return { ...m, reactions: Array.from(grouped.values()) };
+  });
+
+  return NextResponse.json({ messages: withReactionSummary });
 }
 
 export async function POST(req: NextRequest) {

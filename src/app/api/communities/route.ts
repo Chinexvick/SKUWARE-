@@ -28,11 +28,22 @@ export async function GET() {
 
   const communities = await prisma.community.findMany({
     where: { members: { some: { userId: user.id } } },
-    include: { _count: { select: { members: true } } },
+    include: {
+      _count: { select: { members: true } },
+      members: { where: { userId: user.id }, select: { lastReadAt: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ communities });
+  const withUnread = communities.map(({ members, messages, ...rest }) => {
+    const lastReadAt = members[0]?.lastReadAt ?? null;
+    const lastMessageAt = messages[0]?.createdAt ?? null;
+    const hasUnread = !!lastMessageAt && (!lastReadAt || lastMessageAt > lastReadAt);
+    return { ...rest, hasUnread };
+  });
+
+  return NextResponse.json({ communities: withUnread });
 }
 
 export async function POST(req: NextRequest) {
