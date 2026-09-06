@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { messageSchema } from "@/lib/validation";
+import { notifyUsers } from "@/lib/notifications";
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -49,6 +50,12 @@ export async function POST(req: NextRequest) {
 
   const message = await prisma.message.create({
     data: { schoolId: user.schoolId!, senderId: user.id, recipientId, body: text },
+  });
+
+  await notifyUsers([recipientId], {
+    title: `New message from ${user.firstName} ${user.lastName}`,
+    body: text.slice(0, 140),
+    link: "/dashboard/messages",
   });
 
   return NextResponse.json({ message }, { status: 201 });

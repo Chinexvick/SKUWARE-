@@ -1,0 +1,64 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { notifyUsers } from "@/lib/notifications";
+
+const sendSchema = z.object({ body: z.string().trim().min(1).max(2000) });
+
+async function requireMember(userId: string, communityId: string) {
+  return prisma.communityMember.findUnique({ where: { communityId_userId: { communityId, userId } } });
+}
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  const { id } = await params;
+
+  const membership = await requireMember(user.id, id);
+  if (!membership) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+
+  const [community, messages] = await Promise.all([
+    prisma.community.findUnique({
+      where: { id },
+      include: { members: { include: { user: { select: { id: true, firstName: true, lastName: true, role: true, avatarUrl: true } } } } },
+    }),
+    prisma.communityMessage.findMany({
+      where: { communityId: id },
+      include: { sender: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
+      orderBy: { createdAt: "asc" },
+      take: 300,
+    }),
+  ]);
+
+  return NextResponse.json({ community, messages });
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  const { id } = await params;
+
+  const membership = await requireMember(user.id, id);
+  if (!membership) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+
+  const parsed = sendSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
+
+  const [message, community, otherMembers] = await Promise.all([
+    prisma.communityMessage.create({
+      data: { communityId: id, senderId: user.id, body: parsed.data.body },
+      include: { sender: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
+    }),
+    prisma.community.findUnique({ where: { id }, select: { name: true } }),
+    prisma.communityMember.findMany({ where: { communityId: id, userId: { not: user.id } }, select: { userId: true } }),
+  ]);
+
+  await notifyUsers(otherMembers.map((m) => m.userId), {
+    title: community?.name ?? "Community message",
+    body: `${user.firstName}: ${parsed.data.body.slice(0, 120)}`,
+    link: "/dashboard/messages",
+  });
+
+  return NextResponse.json({ message }, { status: 201 });
+}

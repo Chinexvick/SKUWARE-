@@ -95,7 +95,7 @@ function NavIcon({ label }: { label: string }) {
       </svg>
     );
   }
-  if (/communication|message/i.test(label)) {
+  if (/communication|message|announcement/i.test(label)) {
     return (
       <svg className={common} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <path d="M4 5h16v11H8l-4 4V5Z" />
