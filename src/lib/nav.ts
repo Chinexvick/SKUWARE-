@@ -18,6 +18,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   SCHOOL_OWNER: [
     { label: "Overview", href: "/dashboard/admin" },
     { label: "Students", href: "/dashboard/admin/students" },
+    { label: "Parents", href: "/dashboard/admin/parents" },
     { label: "Staff", href: "/dashboard/admin/staff" },
     { label: "Academics", href: "/dashboard/admin/academics" },
     { label: "Fees & Finance", href: "/dashboard/admin/finance" },
@@ -27,6 +28,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   PRINCIPAL: [
     { label: "Overview", href: "/dashboard/admin" },
     { label: "Students", href: "/dashboard/admin/students" },
+    { label: "Parents", href: "/dashboard/admin/parents" },
     { label: "Staff", href: "/dashboard/admin/staff" },
     { label: "Academics", href: "/dashboard/admin/academics" },
     { label: "Communication", href: "/dashboard/admin/communication" },
