@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "AIPersona" ADD VALUE 'SCHOOL_ASSISTANT';

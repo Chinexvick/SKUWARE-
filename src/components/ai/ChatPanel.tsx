@@ -15,7 +15,7 @@ export function ChatPanel({
   placeholder,
   suggestions,
 }: {
-  persona: "STUDENT_TUTOR" | "TEACHER_ASSISTANT" | "PARENT_ASSISTANT";
+  persona: "STUDENT_TUTOR" | "TEACHER_ASSISTANT" | "PARENT_ASSISTANT" | "SCHOOL_ASSISTANT";
   title: string;
   placeholder: string;
   suggestions?: string[];

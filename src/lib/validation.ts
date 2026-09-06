@@ -189,7 +189,7 @@ export const messageSchema = z.object({
 
 export const aiChatSchema = z.object({
   conversationId: z.string().min(1).optional(),
-  persona: z.enum(["STUDENT_TUTOR", "TEACHER_ASSISTANT", "PARENT_ASSISTANT"]),
+  persona: z.enum(["STUDENT_TUTOR", "TEACHER_ASSISTANT", "PARENT_ASSISTANT", "SCHOOL_ASSISTANT"]),
   message: z.string().trim().min(1).max(4000),
 });
 

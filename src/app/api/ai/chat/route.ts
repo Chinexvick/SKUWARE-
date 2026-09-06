@@ -5,11 +5,13 @@ import { aiChatSchema } from "@/lib/validation";
 import { getAICompletion } from "@/lib/ai/provider";
 import { PERSONA_SYSTEM_PROMPTS } from "@/lib/ai/personas";
 import { isRateLimited } from "@/lib/auth/rateLimit";
+import { buildSchoolSnapshot } from "@/lib/ai/schoolContext";
 
 const PERSONA_ROLE_MAP: Record<string, string[]> = {
   STUDENT_TUTOR: ["STUDENT"],
   TEACHER_ASSISTANT: ["TEACHER"],
   PARENT_ASSISTANT: ["PARENT"],
+  SCHOOL_ASSISTANT: ["SUPER_ADMIN", "SCHOOL_OWNER", "PRINCIPAL", "VICE_PRINCIPAL"],
 };
 
 export async function POST(req: NextRequest) {
@@ -65,6 +67,8 @@ export async function POST(req: NextRequest) {
         .map((c) => `${c.firstName} ${c.lastName} (${c.class?.name ?? "unassigned class"})`)
         .join(", ")}. Only discuss these children.\n\n`;
     }
+  } else if (persona === "SCHOOL_ASSISTANT" && user.schoolId) {
+    contextPrefix = `${await buildSchoolSnapshot(user.schoolId)}\n\n`;
   }
 
   const completion = await getAICompletion(
