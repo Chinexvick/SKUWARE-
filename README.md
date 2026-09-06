@@ -193,3 +193,12 @@ connected to this engine afterward. Beyond that, the next layers are:
 course-level university admission requirements (Post-UTME prep), licensed
 past-question import workflow, period-by-period timetabling, a payment
 gateway integration, and a transactional email/SMS provider.
+
+### Deployment
+
+Deploy on Vercel with `DATABASE_URL` (PostgreSQL) and `AUTH_JWT_SECRET`
+set as project environment variables before the first production build —
+Vercel bakes environment variables into a deployment at build time, so
+adding or changing them requires a new deployment (redeploying an
+existing one won't pick up the change) via `pnpm db:deploy` for
+migrations and a fresh push to the production branch.
