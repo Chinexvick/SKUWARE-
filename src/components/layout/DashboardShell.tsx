@@ -200,7 +200,7 @@ function SidebarNav({
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-brand-yellow text-black shadow-sm"
                 : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -255,8 +255,8 @@ export function DashboardShell({
       {/* Mobile drawer */}
       {menuOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col bg-black text-white shadow-2xl">
+          <div className="absolute inset-0 animate-fade-in bg-black/50" onClick={() => setMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] animate-slide-in-left flex-col bg-black text-white shadow-2xl">
             <div className="flex items-center justify-between px-5 py-5">
               <div className="flex items-center gap-2">
                 <Image src="/brand/logo-icon.png" alt="Skuware" width={30} height={30} className="rounded-md" />
@@ -279,7 +279,7 @@ export function DashboardShell({
       )}
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:px-8">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-sm md:px-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMenuOpen(true)}
@@ -298,7 +298,7 @@ export function DashboardShell({
           <div className="flex items-center gap-3">
             <NotificationBell />
             <span className="hidden text-sm font-medium text-black sm:inline">{userName}</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-black">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-black ring-2 ring-brand-yellow/30 ring-offset-2">
               {userName.charAt(0).toUpperCase()}
             </div>
             <button
@@ -310,7 +310,9 @@ export function DashboardShell({
             </button>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main className="flex-1 p-4 md:p-8">
+          <div className="mx-auto max-w-7xl animate-fade-in">{children}</div>
+        </main>
       </div>
     </div>
   );

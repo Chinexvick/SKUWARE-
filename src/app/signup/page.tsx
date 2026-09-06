@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AuthCard } from "@/components/layout/AuthCard";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -64,8 +65,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-brand-light px-4 py-10">
-      <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+    <AuthCard maxWidth="max-w-lg">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <Image src="/brand/logo-horizontal.png" alt="Skuware" width={220} height={39} priority />
           <p className="text-sm text-gray-500">Register your school on Skuware.</p>
@@ -158,7 +158,6 @@ export default function SignupPage() {
             Sign in
           </Link>
         </p>
-      </div>
-    </div>
+    </AuthCard>
   );
 }
