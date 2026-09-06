@@ -60,6 +60,7 @@ export const studentSchema = z.object({
   dateOfBirth: z.coerce.date().optional(),
   classId: z.string().min(1).optional(),
   armId: z.string().min(1).optional(),
+  email: z.string().trim().toLowerCase().email().max(190).optional(),
 });
 
 export const staffSchema = z.object({

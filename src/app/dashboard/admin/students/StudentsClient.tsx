@@ -38,6 +38,7 @@ const emptyForm = {
   dateOfBirth: "",
   classId: "",
   armId: "",
+  email: "",
 };
 
 export function StudentsClient({ canEdit }: { canEdit: boolean }) {
@@ -48,6 +49,7 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [invite, setInvite] = useState<{ email: string; password: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -71,7 +73,8 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
   async function createStudent(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const { ok, data } = await api("/api/people/students", {
+    setInvite(null);
+    const { ok, data } = await api<{ temporaryPassword?: string }>("/api/people/students", {
       method: "POST",
       body: JSON.stringify({
         ...form,
@@ -79,9 +82,14 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
         dateOfBirth: form.dateOfBirth || undefined,
         classId: form.classId || undefined,
         armId: form.armId || undefined,
+        email: form.email || undefined,
       }),
     });
     if (!ok) return setError((data as { error: string }).error ?? "Could not create student.");
+    const temporaryPassword = (data as { temporaryPassword?: string }).temporaryPassword;
+    if (temporaryPassword && form.email) {
+      setInvite({ email: form.email, password: temporaryPassword });
+    }
     setForm(emptyForm);
     setShowForm(false);
     load();
@@ -100,6 +108,19 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
+
+      {invite && (
+        <Card className="mb-4 border-2 border-brand-yellow">
+          <p className="text-sm font-semibold text-black">Login account created for {invite.email}</p>
+          <p className="mt-1 text-sm text-gray-600">
+            Temporary password: <code className="rounded bg-brand-light px-2 py-0.5 font-mono">{invite.password}</code>
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            No email provider is wired up yet — share this with the student directly and ask them to change it after
+            first login.
+          </p>
+        </Card>
+      )}
 
       {showForm && canEdit && (
         <Card className="mb-6">
@@ -144,6 +165,14 @@ export function StudentsClient({ canEdit }: { canEdit: boolean }) {
                 </select>
               </label>
             )}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Input
+                label="Email (optional — creates a student login)"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </div>
             <div className="sm:col-span-2 lg:col-span-3">
               <Button type="submit">Save student</Button>
             </div>
