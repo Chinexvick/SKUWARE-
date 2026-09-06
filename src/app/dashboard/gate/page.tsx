@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { NAV_ITEMS, ROLE_LABEL } from "@/lib/nav";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { Greeting } from "@/components/layout/Greeting";
 import { GateScanClient } from "./GateScanClient";
 
 export default async function GateDashboardPage() {
@@ -13,7 +14,10 @@ export default async function GateDashboardPage() {
       userName={`${user.firstName} ${user.lastName}`}
       navItems={NAV_ITEMS[user.role]}
     >
-      <GateScanClient />
+      <Greeting firstName={user.firstName} />
+      <div className="mt-6">
+        <GateScanClient />
+      </div>
     </DashboardShell>
   );
 }

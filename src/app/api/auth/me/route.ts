@@ -16,6 +16,7 @@ export async function GET() {
       schoolId: user.schoolId,
       mfaEnabled: user.mfaEnabled,
       emailVerifiedAt: user.emailVerifiedAt,
+      avatarUrl: user.avatarUrl,
     },
   });
 }

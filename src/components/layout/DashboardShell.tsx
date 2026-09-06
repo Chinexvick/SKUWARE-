@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NotificationBell } from "./NotificationBell";
 
 export interface NavItem {
@@ -182,6 +182,93 @@ function NavIcon({ label }: { label: string }) {
   );
 }
 
+function UserAvatar({ avatarUrl, name, size = 36 }: { avatarUrl: string | null; name: string; size?: number }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- data: URIs aren't supported by next/image
+      <img
+        src={avatarUrl}
+        alt={name}
+        width={size}
+        height={size}
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded-full bg-brand-yellow font-bold text-black"
+      style={{ width: size, height: size, fontSize: size * 0.4 }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function ProfileMenu({
+  userName,
+  roleLabel,
+  avatarUrl,
+  onLogout,
+  loggingOut,
+  variant,
+}: {
+  userName: string;
+  roleLabel: string;
+  avatarUrl: string | null;
+  onLogout: () => void;
+  loggingOut: boolean;
+  variant: "sidebar" | "drawer";
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className={`relative border-t border-white/10 ${variant === "sidebar" ? "" : ""}`}>
+      {open && (
+        <div className="absolute bottom-full left-3 right-3 mb-1 overflow-hidden rounded-lg border border-white/10 bg-[#1a1a1a] shadow-xl">
+          <Link
+            href="/dashboard/profile"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 text-sm text-gray-200 hover:bg-white/10"
+          >
+            My Profile
+          </Link>
+          <button
+            onClick={onLogout}
+            disabled={loggingOut}
+            className="block w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-white/10 disabled:opacity-50"
+          >
+            {loggingOut ? "Signing out…" : "Sign out"}
+          </button>
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2.5 px-5 py-4 text-left transition hover:bg-white/5"
+      >
+        <UserAvatar avatarUrl={avatarUrl} name={userName} size={34} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-white">{userName}</span>
+          <span className="block truncate text-xs text-gray-400">{roleLabel}</span>
+        </span>
+        <svg className="h-4 w-4 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m18 15-6-6-6 6" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 function SidebarNav({
   navItems,
   pathname,
@@ -232,6 +319,20 @@ export function DashboardShell({
   const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.user?.avatarUrl) setAvatarUrl(data.user.avatarUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -249,7 +350,14 @@ export function DashboardShell({
           <span className="text-lg font-bold tracking-tight">SKUWARE</span>
         </div>
         <SidebarNav navItems={navItems} pathname={pathname} />
-        <div className="border-t border-white/10 px-5 py-4 text-xs text-gray-400">{roleLabel}</div>
+        <ProfileMenu
+          userName={userName}
+          roleLabel={roleLabel}
+          avatarUrl={avatarUrl}
+          onLogout={handleLogout}
+          loggingOut={loggingOut}
+          variant="sidebar"
+        />
       </aside>
 
       {/* Mobile drawer */}
@@ -273,41 +381,40 @@ export function DashboardShell({
               </button>
             </div>
             <SidebarNav navItems={navItems} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
-            <div className="border-t border-white/10 px-5 py-4 text-xs text-gray-400">{roleLabel}</div>
+            <ProfileMenu
+              userName={userName}
+              roleLabel={roleLabel}
+              avatarUrl={avatarUrl}
+              onLogout={handleLogout}
+              loggingOut={loggingOut}
+              variant="drawer"
+            />
           </aside>
         </div>
       )}
 
-      <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-sm md:px-8">
-          <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white/90 px-3 py-3 backdrop-blur-sm sm:px-4 md:px-8">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
-              className="-ml-1 rounded-md p-1.5 text-black hover:bg-brand-light md:hidden"
+              className="-ml-1 shrink-0 rounded-md p-1.5 text-black hover:bg-brand-light md:hidden"
             >
               <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 6h18M3 12h18M3 18h18" />
               </svg>
             </button>
-            <div>
-              <h1 className="text-lg font-bold text-black">{title}</h1>
-              <p className="text-xs text-gray-500">{roleLabel}</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold text-black sm:text-lg">{title}</h1>
+              <p className="truncate text-xs text-gray-500">{roleLabel}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <NotificationBell />
-            <span className="hidden text-sm font-medium text-black sm:inline">{userName}</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-black ring-2 ring-brand-yellow/30 ring-offset-2">
-              {userName.charAt(0).toUpperCase()}
-            </div>
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="rounded-lg border border-black px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-black hover:text-white disabled:opacity-50"
-            >
-              {loggingOut ? "Signing out…" : "Sign out"}
-            </button>
+            <Link href="/dashboard/profile" aria-label="My profile">
+              <UserAvatar avatarUrl={avatarUrl} name={userName} />
+            </Link>
           </div>
         </header>
         <main className="flex-1 p-4 md:p-8">

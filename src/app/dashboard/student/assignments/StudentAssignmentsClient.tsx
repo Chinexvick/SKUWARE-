@@ -55,9 +55,11 @@ export function StudentAssignmentsClient() {
         const submission = a.submissions[0];
         return (
           <Card key={a.id}>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="font-semibold text-black">{a.title}</h3>
-              <span className="text-xs text-gray-500">{a.subject.name} · Due {new Date(a.dueDate).toLocaleDateString()}</span>
+              <span className="shrink-0 text-xs text-gray-500">
+                {a.subject.name} · Due {new Date(a.dueDate).toLocaleDateString()}
+              </span>
             </div>
             <p className="mb-3 text-sm text-gray-600">{a.instructions}</p>
             {submission ? (

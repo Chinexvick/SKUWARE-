@@ -193,13 +193,13 @@ function SessionsPanel({ canEdit }: { canEdit: boolean }) {
                 {s.terms.length === 0 && <li className="py-2 text-sm text-gray-400">No terms yet.</li>}
               </ul>
               {canEdit && (
-                <form onSubmit={(e) => createTerm(s.id, e)} className="grid grid-cols-4 gap-2">
+                <form onSubmit={(e) => createTerm(s.id, e)} className="grid grid-cols-1 gap-2 sm:grid-cols-4">
                   <input
                     placeholder="Term name"
                     required
                     value={termForm[s.id]?.name ?? ""}
                     onChange={(e) => setTermForm((f) => ({ ...f, [s.id]: { ...f[s.id], name: e.target.value, startDate: f[s.id]?.startDate ?? "", endDate: f[s.id]?.endDate ?? "" } }))}
-                    className="col-span-2 rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                    className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm sm:col-span-2"
                   />
                   <input
                     type="date"

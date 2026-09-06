@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { NAV_ITEMS, ROLE_LABEL } from "@/lib/nav";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { Greeting } from "@/components/layout/Greeting";
 import { StatCard } from "@/components/ui/Card";
 import { prisma } from "@/lib/db";
 
@@ -8,7 +9,7 @@ export default async function AdminDashboardPage() {
   const user = await requireUser(["SUPER_ADMIN", "SCHOOL_OWNER", "PRINCIPAL", "VICE_PRINCIPAL", "STAFF"]);
 
   const schoolId = user.schoolId!;
-  const [studentCount, staffCount, parentCount, recentAnnouncements] = await Promise.all([
+  const [studentCount, staffCount, parentCount, recentAnnouncements, invoiceTotals] = await Promise.all([
     prisma.student.count({ where: { schoolId } }),
     prisma.staffProfile.count({ where: { schoolId } }),
     prisma.parentProfile.count({ where: { schoolId } }),
@@ -17,7 +18,9 @@ export default async function AdminDashboardPage() {
       orderBy: { publishedAt: "desc" },
       take: 5,
     }),
+    prisma.invoice.aggregate({ where: { schoolId }, _sum: { amountDue: true, amountPaid: true } }),
   ]);
+  const outstanding = Math.max(0, (invoiceTotals._sum.amountDue ?? 0) - (invoiceTotals._sum.amountPaid ?? 0));
 
   return (
     <DashboardShell
@@ -26,11 +29,16 @@ export default async function AdminDashboardPage() {
       userName={`${user.firstName} ${user.lastName}`}
       navItems={NAV_ITEMS[user.role]}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Greeting firstName={user.firstName} />
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Students" value={studentCount} />
         <StatCard label="Staff" value={staffCount} />
         <StatCard label="Parents" value={parentCount} />
-        <StatCard label="Outstanding Fees" value="—" hint="Fees module coming next" />
+        <StatCard
+          label="Outstanding Fees"
+          value={`₦${outstanding.toLocaleString("en-NG")}`}
+          accent={outstanding > 0 ? "negative" : "positive"}
+        />
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">

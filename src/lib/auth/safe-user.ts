@@ -12,6 +12,7 @@ export const safeUserSelect = {
   phone: true,
   role: true,
   status: true,
+  avatarUrl: true,
   mfaEnabled: true,
   emailVerifiedAt: true,
   lastLoginAt: true,

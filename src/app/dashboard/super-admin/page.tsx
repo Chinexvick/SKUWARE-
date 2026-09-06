@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { NAV_ITEMS, ROLE_LABEL } from "@/lib/nav";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { Greeting } from "@/components/layout/Greeting";
 import { StatCard } from "@/components/ui/Card";
 import { prisma } from "@/lib/db";
 
@@ -20,7 +21,8 @@ export default async function SuperAdminDashboardPage() {
       userName={`${user.firstName} ${user.lastName}`}
       navItems={NAV_ITEMS[user.role]}
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Greeting firstName={user.firstName} />
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Schools" value={schoolCount} />
         <StatCard label="Trial Schools" value={trialCount} />
         <StatCard label="Total Users" value={userCount} />

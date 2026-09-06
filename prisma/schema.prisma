@@ -217,6 +217,7 @@ model User {
   lastName  String
   role      UserRole
   status    UserStatus @default(PENDING_VERIFICATION)
+  avatarUrl String?
 
   passwordHash String
   passwordAlgo String @default("bcrypt")
