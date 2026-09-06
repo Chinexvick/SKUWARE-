@@ -6,12 +6,31 @@ import type { UserRole } from "@prisma/client";
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 minutes
 const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 
-function getSecret(): Uint8Array {
-  const secret = process.env.AUTH_JWT_SECRET;
-  if (!secret || secret.length < 32) {
+let cachedFallbackSecret: Uint8Array | null = null;
+
+// Fallback used only when the AUTH_JWT_SECRET environment variable isn't
+// reachable on the deploy target (e.g. a hosting dashboard that won't let
+// the project add one). Derived from DATABASE_URL via SHA-256 (Web Crypto,
+// so this stays edge-safe) instead of a literal committed to the repo —
+// still, set a real AUTH_JWT_SECRET and remove this fallback before
+// handling real user data.
+async function getFallbackSecret(): Promise<Uint8Array> {
+  if (cachedFallbackSecret) return cachedFallbackSecret;
+  const seed = process.env.DATABASE_URL;
+  if (!seed) {
     throw new Error("AUTH_JWT_SECRET is missing or too short. Set a long random secret in .env.");
   }
-  return new TextEncoder().encode(secret);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(seed));
+  cachedFallbackSecret = new Uint8Array(digest);
+  return cachedFallbackSecret;
+}
+
+async function getSecret(): Promise<Uint8Array> {
+  const secret = process.env.AUTH_JWT_SECRET;
+  if (secret && secret.length >= 32) {
+    return new TextEncoder().encode(secret);
+  }
+  return getFallbackSecret();
 }
 
 export interface AccessTokenClaims {
@@ -26,12 +45,12 @@ export async function signAccessToken(claims: AccessTokenClaims): Promise<string
     .setSubject(claims.sub)
     .setIssuedAt()
     .setExpirationTime(`${ACCESS_TOKEN_TTL_SECONDS}s`)
-    .sign(getSecret());
+    .sign(await getSecret());
 }
 
 export async function verifyAccessToken(token: string): Promise<AccessTokenClaims | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, await getSecret());
     if (!payload.sub || !payload.role) return null;
     return {
       sub: payload.sub,
