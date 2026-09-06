@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { messageSchema } from "@/lib/validation";
+
+export async function GET(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+
+  const withUserId = req.nextUrl.searchParams.get("with");
+
+  const messages = await prisma.message.findMany({
+    where: {
+      schoolId: user.schoolId!,
+      OR: [
+        { senderId: user.id, ...(withUserId ? { recipientId: withUserId } : {}) },
+        { recipientId: user.id, ...(withUserId ? { senderId: withUserId } : {}) },
+      ],
+    },
+    include: {
+      sender: { select: { id: true, firstName: true, lastName: true, role: true } },
+      recipient: { select: { id: true, firstName: true, lastName: true, role: true } },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 200,
+  });
+
+  await prisma.message.updateMany({
+    where: { recipientId: user.id, readAt: null, ...(withUserId ? { senderId: withUserId } : {}) },
+    data: { readAt: new Date() },
+  });
+
+  return NextResponse.json({ messages });
+}
+
+export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+
+  const body = await req.json().catch(() => null);
+  const parsed = messageSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input.", details: parsed.error.flatten() }, { status: 400 });
+  }
+  const { recipientId, body: text } = parsed.data;
+
+  const recipient = await prisma.user.findFirst({ where: { id: recipientId, schoolId: user.schoolId! } });
+  if (!recipient) return NextResponse.json({ error: "Recipient not found at this school." }, { status: 404 });
+
+  const message = await prisma.message.create({
+    data: { schoolId: user.schoolId!, senderId: user.id, recipientId, body: text },
+  });
+
+  return NextResponse.json({ message }, { status: 201 });
+}

@@ -22,8 +22,10 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Staff", href: "/dashboard/admin/staff" },
     { label: "Academics", href: "/dashboard/admin/academics" },
     { label: "Fees & Finance", href: "/dashboard/admin/finance" },
+    { label: "Admissions", href: "/dashboard/admin/admissions" },
+    { label: "Documents", href: "/dashboard/admin/documents" },
+    { label: "Gate Access", href: "/dashboard/admin/gate-access" },
     { label: "Communication", href: "/dashboard/admin/communication" },
-    { label: "Settings", href: "/dashboard/admin/settings" },
   ],
   PRINCIPAL: [
     { label: "Overview", href: "/dashboard/admin" },
@@ -31,6 +33,8 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Parents", href: "/dashboard/admin/parents" },
     { label: "Staff", href: "/dashboard/admin/staff" },
     { label: "Academics", href: "/dashboard/admin/academics" },
+    { label: "Admissions", href: "/dashboard/admin/admissions" },
+    { label: "Documents", href: "/dashboard/admin/documents" },
     { label: "Communication", href: "/dashboard/admin/communication" },
   ],
   VICE_PRINCIPAL: [
@@ -42,6 +46,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   STAFF: [
     { label: "Overview", href: "/dashboard/admin" },
     { label: "Students", href: "/dashboard/admin/students" },
+    { label: "Documents", href: "/dashboard/admin/documents" },
   ],
   BURSAR: [
     { label: "Overview", href: "/dashboard/bursar" },
@@ -63,11 +68,13 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Attendance", href: "/dashboard/parent/attendance" },
     { label: "Fees", href: "/dashboard/parent/fees" },
     { label: "Messages", href: "/dashboard/parent/messages" },
+    { label: "AI Assistant", href: "/dashboard/parent/ai" },
   ],
   STUDENT: [
     { label: "Overview", href: "/dashboard/student" },
     { label: "Timetable", href: "/dashboard/student/timetable" },
     { label: "Assignments", href: "/dashboard/student/assignments" },
+    { label: "Attendance", href: "/dashboard/student/attendance" },
     { label: "Results", href: "/dashboard/student/results" },
     { label: "AI Tutor", href: "/dashboard/student/ai-tutor" },
     { label: "Exam Prep", href: "/dashboard/student/exam-prep" },

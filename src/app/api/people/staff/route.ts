@@ -7,7 +7,7 @@ import { recordAudit } from "@/lib/auth/audit";
 import { safeUserSelect } from "@/lib/auth/safe-user";
 
 export async function GET() {
-  const { user, response } = await requireApiUser(ADMIN_AND_STAFF_ROLES);
+  const { user, response } = await requireApiUser([...ADMIN_AND_STAFF_ROLES, "PARENT", "STUDENT"]);
   if (!user) return response!;
 
   const staff = await prisma.staffProfile.findMany({
