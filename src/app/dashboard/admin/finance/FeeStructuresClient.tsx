@@ -25,6 +25,12 @@ interface FeeStructure {
   term: { name: string };
   class: { name: string } | null;
 }
+interface GenerateResult {
+  structureId: string;
+  created: number;
+  skipped: number;
+  totalStudents: number;
+}
 interface Invoice {
   id: string;
   description: string;
@@ -50,6 +56,8 @@ export function FeeStructuresClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", amount: "", termId: "", classId: "" });
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [genResult, setGenResult] = useState<GenerateResult | null>(null);
 
   async function load() {
     setLoading(true);
@@ -83,6 +91,21 @@ export function FeeStructuresClient() {
     load();
   }
 
+  async function generateInvoices(structureId: string) {
+    setGenerating(structureId);
+    setGenResult(null);
+    setError(null);
+    const { ok, data } = await api<{ created: number; skipped: number; totalStudents: number }>(
+      `/api/fees/structures/${structureId}/generate-invoices`,
+      { method: "POST" },
+    );
+    setGenerating(null);
+    if (!ok) return setError((data as { error: string }).error ?? "Could not generate invoices.");
+    const result = data as { created: number; skipped: number; totalStudents: number };
+    setGenResult({ structureId, ...result });
+    load();
+  }
+
   const collected = invoices.reduce((sum, i) => sum + i.amountPaid, 0);
   const outstanding = invoices.reduce((sum, i) => sum + (i.amountDue - i.amountPaid), 0);
 
@@ -95,6 +118,13 @@ export function FeeStructuresClient() {
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
+      {genResult && (
+        <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
+          Generated {genResult.created} invoice{genResult.created === 1 ? "" : "s"}
+          {genResult.skipped > 0 ? ` (${genResult.skipped} already invoiced, skipped)` : ""} — out of{" "}
+          {genResult.totalStudents} student{genResult.totalStudents === 1 ? "" : "s"} in scope.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
@@ -107,16 +137,17 @@ export function FeeStructuresClient() {
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Term</th>
                   <th className="px-4 py-3">Class</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-gray-500">Loading…</td>
+                    <td colSpan={5} className="px-4 py-6 text-center text-gray-500">Loading…</td>
                   </tr>
                 ) : structures.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-gray-500">No fee structures yet.</td>
+                    <td colSpan={5} className="px-4 py-6 text-center text-gray-500">No fee structures yet.</td>
                   </tr>
                 ) : (
                   structures.map((s) => (
@@ -125,6 +156,16 @@ export function FeeStructuresClient() {
                       <td className="px-4 py-3">{naira(s.amount)}</td>
                       <td className="px-4 py-3">{s.term.name}</td>
                       <td className="px-4 py-3">{s.class?.name ?? "All classes"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="secondary"
+                          className="whitespace-nowrap px-2.5 py-1 text-xs"
+                          loading={generating === s.id}
+                          onClick={() => generateInvoices(s.id)}
+                        >
+                          Generate invoices
+                        </Button>
+                      </td>
                     </tr>
                   ))
                 )}
