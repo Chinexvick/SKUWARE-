@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { homeworkSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/auth/audit";
+import { notifyUsers } from "@/lib/notifications";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -66,6 +67,20 @@ export async function POST(req: NextRequest) {
   });
 
   await recordAudit({ schoolId, userId: user.id, action: "RECORD_CREATED", targetType: "Assignment", targetId: assignment.id });
+
+  const classStudents = await prisma.student.findMany({
+    where: { schoolId, classId, ...(armId ? { armId } : {}) },
+    select: { userId: true },
+  });
+  const studentProfileIds = classStudents.map((s) => s.userId).filter((id): id is string => !!id);
+  if (studentProfileIds.length > 0) {
+    const profiles = await prisma.studentProfile.findMany({ where: { id: { in: studentProfileIds } }, select: { userId: true } });
+    await notifyUsers(profiles.map((p) => p.userId), {
+      title: `New assignment: ${title}`,
+      body: `Due ${dueDate.toLocaleDateString()}.`,
+      link: "/dashboard/student/assignments",
+    });
+  }
 
   return NextResponse.json({ assignment }, { status: 201 });
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { NotificationBell } from "./NotificationBell";
 
 export interface NavItem {
   label: string;
@@ -295,6 +296,7 @@ export function DashboardShell({
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <span className="hidden text-sm font-medium text-black sm:inline">{userName}</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-yellow text-sm font-bold text-black">
               {userName.charAt(0).toUpperCase()}

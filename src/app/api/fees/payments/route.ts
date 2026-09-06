@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireApiUser } from "@/lib/auth/api-guard";
 import { paymentSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/auth/audit";
+import { notifyUsers } from "@/lib/notifications";
 import type { UserRole } from "@prisma/client";
 
 const FEES_ROLES: UserRole[] = ["SUPER_ADMIN", "SCHOOL_OWNER", "BURSAR"];
@@ -52,6 +53,26 @@ export async function POST(req: NextRequest) {
     targetId: payment.id,
     metadata: { invoiceId, amount },
   });
+
+  const student = await prisma.student.findUnique({
+    where: { id: invoice.studentId },
+    include: { parentLinks: { include: { parent: true } } },
+  });
+  const recipientUserIds: string[] = [];
+  if (student?.userId) {
+    const studentProfile = await prisma.studentProfile.findUnique({ where: { id: student.userId } });
+    if (studentProfile) recipientUserIds.push(studentProfile.userId);
+  }
+  for (const link of student?.parentLinks ?? []) {
+    recipientUserIds.push(link.parent.userId);
+  }
+  if (recipientUserIds.length > 0) {
+    await notifyUsers(recipientUserIds, {
+      title: "Payment received",
+      body: `A payment of ₦${amount.toLocaleString("en-NG")} was recorded for ${invoice.description}.`,
+      link: "/dashboard/parent/fees",
+    });
+  }
 
   return NextResponse.json({ payment }, { status: 201 });
 }

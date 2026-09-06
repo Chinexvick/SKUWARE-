@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { requireApiUser, ADMIN_ROLES } from "@/lib/auth/api-guard";
 import { recordAudit } from "@/lib/auth/audit";
+import { notifySchool } from "@/lib/notifications";
 
 const announcementSchema = z.object({
   title: z.string().trim().min(1).max(150),
@@ -38,6 +39,14 @@ export async function POST(req: NextRequest) {
   });
 
   await recordAudit({ schoolId: user.schoolId, userId: user.id, action: "RECORD_CREATED", targetType: "Announcement", targetId: announcement.id });
+
+  // Scope-specific targeting (class/individual) isn't wired to actual
+  // recipients yet — notify the whole school for every scope for now.
+  await notifySchool(user.schoolId!, {
+    title: `New announcement: ${announcement.title}`,
+    body: announcement.body,
+    link: "/dashboard",
+  });
 
   return NextResponse.json({ announcement }, { status: 201 });
 }
