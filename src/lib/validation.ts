@@ -80,6 +80,39 @@ export const parentSchema = z.object({
   studentAdmissionNos: z.array(z.string().trim().min(1)).optional().default([]),
 });
 
+// --- Academics ---
+
+export const gradingComponentSchema = z.object({
+  name: z.string().trim().min(1).max(50),
+  maxScore: z.coerce.number().int().min(1).max(1000),
+  order: z.coerce.number().int().min(0).max(100).optional().default(0),
+});
+
+export const assignmentSchema = z.object({
+  teacherId: z.string().min(1),
+  subjectId: z.string().min(1),
+  classId: z.string().min(1),
+  armId: z.string().min(1).optional(),
+  termId: z.string().min(1),
+});
+
+export const scoreEntrySchema = z.object({
+  studentId: z.string().min(1),
+  componentId: z.string().min(1),
+  score: z.coerce.number().min(0),
+});
+
+export const bulkScoreSchema = z.object({
+  assignmentId: z.string().min(1),
+  entries: z.array(scoreEntrySchema).min(1).max(500),
+});
+
+export const subjectCommentSchema = z.object({
+  assignmentId: z.string().min(1),
+  studentId: z.string().min(1),
+  comment: z.string().trim().min(1).max(1000),
+});
+
 function slugify(input: string): string {
   return input
     .toLowerCase()

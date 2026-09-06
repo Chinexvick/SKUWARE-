@@ -5,7 +5,7 @@ import { termSchema } from "@/lib/validation";
 import { recordAudit } from "@/lib/auth/audit";
 
 export async function GET(req: NextRequest) {
-  const { user, response } = await requireApiUser(ADMIN_AND_STAFF_ROLES);
+  const { user, response } = await requireApiUser([...ADMIN_AND_STAFF_ROLES, "TEACHER", "STUDENT", "PARENT"]);
   if (!user) return response!;
 
   const sessionId = req.nextUrl.searchParams.get("sessionId") ?? undefined;

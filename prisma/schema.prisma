@@ -99,16 +99,20 @@ model School {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  users            User[]
-  academicSessions AcademicSession[]
-  classes          Class[]
-  departments      Department[]
-  subjects         Subject[]
-  students         Student[]
-  parents          ParentProfile[]
-  staff            StaffProfile[]
-  announcements    Announcement[]
-  auditLogs        AuditLog[]
+  users             User[]
+  academicSessions  AcademicSession[]
+  classes           Class[]
+  departments       Department[]
+  subjects          Subject[]
+  students          Student[]
+  parents           ParentProfile[]
+  staff             StaffProfile[]
+  announcements     Announcement[]
+  auditLogs         AuditLog[]
+  gradingComponents GradingComponent[]
+  assignments       TeacherSubjectAssignment[]
+  scores            Score[]
+  subjectComments   SubjectComment[]
 
   @@index([status])
 }
@@ -143,14 +147,17 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refreshTokens      RefreshToken[]
-  passwordResetTokens PasswordResetToken[]
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
-  auditLogs           AuditLog[]
+  auditLogs               AuditLog[]
 
   studentProfile StudentProfile?
   parentProfile  ParentProfile?
   staffProfile   StaffProfile?
+
+  recordedScores   Score[]
+  authoredComments SubjectComment[]
 
   @@index([schoolId, role])
   @@index([status])
@@ -240,13 +247,17 @@ model Term {
   endDate   DateTime
   isCurrent Boolean         @default(false)
 
+  assignments TeacherSubjectAssignment[]
+  scores      Score[]
+  comments    SubjectComment[]
+
   @@index([sessionId])
 }
 
 model Department {
-  id       String   @id @default(cuid())
+  id       String @id @default(cuid())
   schoolId String
-  school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   name     String
 
   subjects Subject[]
@@ -261,8 +272,9 @@ model Class {
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   name     String
 
-  arms     Arm[]
-  students Student[]
+  arms        Arm[]
+  students    Student[]
+  assignments TeacherSubjectAssignment[]
 
   @@index([schoolId])
 }
@@ -273,7 +285,8 @@ model Arm {
   class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
   name    String
 
-  students Student[]
+  students    Student[]
+  assignments TeacherSubjectAssignment[]
 
   @@index([classId])
 }
@@ -287,6 +300,10 @@ model Subject {
   name         String
   code         String?
 
+  assignments TeacherSubjectAssignment[]
+  scores      Score[]
+  comments    SubjectComment[]
+
   @@index([schoolId])
 }
 
@@ -295,35 +312,37 @@ model Subject {
 // ---------------------------------------------------------------------------
 
 model Student {
-  id            String   @id @default(cuid())
-  schoolId      String
-  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  userId        String?  @unique
-  user          StudentProfile? @relation(fields: [userId], references: [id])
-  admissionNo   String
-  firstName     String
-  lastName      String
-  gender        Gender?
-  dateOfBirth   DateTime?
-  classId       String?
-  class         Class?   @relation(fields: [classId], references: [id])
-  armId         String?
-  arm           Arm?     @relation(fields: [armId], references: [id])
-  status        String   @default("active")
-  createdAt     DateTime @default(now())
+  id          String          @id @default(cuid())
+  schoolId    String
+  school      School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId      String?         @unique
+  user        StudentProfile? @relation(fields: [userId], references: [id])
+  admissionNo String
+  firstName   String
+  lastName    String
+  gender      Gender?
+  dateOfBirth DateTime?
+  classId     String?
+  class       Class?          @relation(fields: [classId], references: [id])
+  armId       String?
+  arm         Arm?            @relation(fields: [armId], references: [id])
+  status      String          @default("active")
+  createdAt   DateTime        @default(now())
 
   parentLinks StudentParentLink[]
   attendance  Attendance[]
+  scores      Score[]
+  comments    SubjectComment[]
 
   @@unique([schoolId, admissionNo])
   @@index([schoolId, classId])
 }
 
 model StudentProfile {
-  id       String  @id @default(cuid())
-  userId   String  @unique
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  student  Student?
+  id      String   @id @default(cuid())
+  userId  String   @unique
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student?
 }
 
 model ParentProfile {
@@ -358,6 +377,8 @@ model StaffProfile {
   designation  String?
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
+
+  subjectAssignments TeacherSubjectAssignment[]
 
   @@index([schoolId])
 }
@@ -394,4 +415,94 @@ model Announcement {
   createdBy   String?
 
   @@index([schoolId, publishedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Academics: teacher assignment, grading components, scores, comments
+// ---------------------------------------------------------------------------
+
+/// A teacher assigned to teach a subject to a class (optionally a specific arm) for a term.
+model TeacherSubjectAssignment {
+  id        String       @id @default(cuid())
+  schoolId  String
+  school    School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   StaffProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  armId     String?
+  arm       Arm?         @relation(fields: [armId], references: [id], onDelete: Cascade)
+  termId    String
+  term      Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  scores   Score[]
+  comments SubjectComment[]
+
+  @@index([schoolId])
+  @@index([teacherId])
+  @@index([classId, armId, subjectId, termId])
+}
+
+/// School-configurable assessment components (e.g. "1st CA" /20, "Exam" /60).
+model GradingComponent {
+  id       String @id @default(cuid())
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name     String
+  maxScore Int
+  order    Int    @default(0)
+
+  scores Score[]
+
+  @@index([schoolId])
+}
+
+model Score {
+  id           String                    @id @default(cuid())
+  schoolId     String
+  school       School                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId    String
+  subject      Subject                   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  termId       String
+  term         Term                      @relation(fields: [termId], references: [id], onDelete: Cascade)
+  componentId  String
+  component    GradingComponent          @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  assignmentId String?
+  assignment   TeacherSubjectAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  score        Float
+  recordedById String?
+  recordedBy   User?                     @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@unique([studentId, subjectId, termId, componentId])
+  @@index([schoolId, subjectId, termId])
+  @@index([studentId, termId])
+}
+
+/// A teacher's remark on a student's performance in one subject for one term.
+model SubjectComment {
+  id           String                    @id @default(cuid())
+  schoolId     String
+  school       School                    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student                   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId    String
+  subject      Subject                   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  termId       String
+  term         Term                      @relation(fields: [termId], references: [id], onDelete: Cascade)
+  assignmentId String?
+  assignment   TeacherSubjectAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  comment      String
+  authoredById String?
+  authoredBy   User?                     @relation(fields: [authoredById], references: [id], onDelete: SetNull)
+  updatedAt    DateTime                  @updatedAt
+
+  @@unique([studentId, subjectId, termId])
+  @@index([schoolId, termId])
 }

@@ -74,6 +74,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Sensible defaults so a new school can start recording scores immediately;
+    // fully editable afterward via the grading components API.
+    await tx.gradingComponent.createMany({
+      data: [
+        { schoolId: school.id, name: "1st C.A.", maxScore: 20, order: 1 },
+        { schoolId: school.id, name: "2nd C.A.", maxScore: 20, order: 2 },
+        { schoolId: school.id, name: "Exam", maxScore: 60, order: 3 },
+      ],
+    });
+
     const rawToken = randomBytes(32).toString("base64url");
     const tokenHash = createHash("sha256").update(rawToken).digest("hex");
     await tx.emailVerificationToken.create({

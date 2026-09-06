@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AssignmentsPanel } from "./AssignmentsPanel";
 
 interface Term {
   id: string;
@@ -41,7 +42,7 @@ interface Subject {
   department: Department | null;
 }
 
-const TABS = ["Sessions & Terms", "Classes & Arms", "Departments", "Subjects"] as const;
+const TABS = ["Sessions & Terms", "Classes & Arms", "Departments", "Subjects", "Teacher Assignments"] as const;
 type Tab = (typeof TABS)[number];
 
 async function api<T>(url: string, init?: RequestInit): Promise<{ ok: boolean; data: T | { error: string } }> {
@@ -76,6 +77,7 @@ export function AcademicsClient({ canEdit }: { canEdit: boolean }) {
       {tab === "Classes & Arms" && <ClassesPanel canEdit={canEdit} />}
       {tab === "Departments" && <DepartmentsPanel canEdit={canEdit} />}
       {tab === "Subjects" && <SubjectsPanel canEdit={canEdit} />}
+      {tab === "Teacher Assignments" && <AssignmentsPanel canEdit={canEdit} />}
     </div>
   );
 }
