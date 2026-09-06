@@ -5,6 +5,9 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { EmojiPicker } from "@/components/ui/EmojiPicker";
+import { MessageBody } from "@/components/ui/MessageBody";
+import { displayName } from "@/lib/displayName";
 
 interface DirectoryUser {
   id: string;
@@ -31,11 +34,20 @@ interface Community {
   description: string | null;
   _count: { members: number };
 }
+interface CommunityMember {
+  id: string;
+  isAdmin: boolean;
+  user: DirectoryUser;
+}
 interface CommunityMessage {
   id: string;
   body: string;
   createdAt: string;
-  sender: { id: string; firstName: string; lastName: string };
+  sender: { id: string; firstName: string; lastName: string; role: string; avatarUrl: string | null };
+}
+interface Klass {
+  id: string;
+  name: string;
 }
 
 const ROLE_LABEL_SHORT: Record<string, string> = {
@@ -65,6 +77,34 @@ function Avatar({ user, size = 36 }: { user: DirectoryUser; size?: number }) {
   );
 }
 
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} aria-label="Back" className="-ml-1 shrink-0 rounded-md p-1.5 hover:bg-brand-light lg:hidden">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  );
+}
+
+function ModerationError({ message, flaggedWord }: { message: string; flaggedWord?: string }) {
+  if (!flaggedWord) return <p className="text-sm font-medium text-red-600">{message}</p>;
+  const parts = message.split(new RegExp(`(${flaggedWord})`, "i"));
+  return (
+    <p className="text-sm font-medium text-red-600">
+      {parts.map((part, i) =>
+        part.toLowerCase() === flaggedWord.toLowerCase() ? (
+          <mark key={i} className="rounded bg-red-200 px-1 text-red-800">
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
 function DirectMessagesTab() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [search, setSearch] = useState("");
@@ -74,6 +114,7 @@ function DirectMessagesTab() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState<{ message: string; flaggedWord?: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function loadConversations() {
@@ -114,29 +155,34 @@ function DirectMessagesTab() {
     setActive(user);
     setSearch("");
     setSearchResults([]);
+    setError(null);
   }
 
   async function send(e: FormEvent) {
     e.preventDefault();
     if (!text.trim() || !active) return;
     setSending(true);
+    setError(null);
     const res = await fetch("/api/communication/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ recipientId: active.id, body: text }),
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setText("");
       const refreshed = await fetch(`/api/communication/messages?with=${active.id}`);
       setMessages((await refreshed.json()).messages);
       loadConversations();
+    } else {
+      setError({ message: data.error ?? "Could not send that message.", flaggedWord: data.flaggedWord });
     }
     setSending(false);
   }
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-      <Card className="flex h-[32rem] flex-col p-0">
+      <Card className={`flex h-[32rem] flex-col p-0 ${active ? "hidden lg:flex" : "flex"}`}>
         <div className="border-b border-gray-100 p-3">
           <input
             value={search}
@@ -158,9 +204,7 @@ function DirectMessagesTab() {
                 >
                   <Avatar user={u} size={32} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-black">
-                      {u.firstName} {u.lastName}
-                    </span>
+                    <span className="block truncate text-sm font-medium text-black">{displayName(u)}</span>
                     <span className="block text-xs text-gray-500">{ROLE_LABEL_SHORT[u.role] ?? u.role}</span>
                   </span>
                 </button>
@@ -182,9 +226,7 @@ function DirectMessagesTab() {
                 <Avatar user={c.partner} size={36} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-semibold text-black">
-                      {c.partner.firstName} {c.partner.lastName}
-                    </span>
+                    <span className="truncate text-sm font-semibold text-black">{displayName(c.partner)}</span>
                     {c.unread > 0 && (
                       <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand-yellow px-1 text-[10px] font-bold text-black">
                         {c.unread}
@@ -199,7 +241,7 @@ function DirectMessagesTab() {
         </div>
       </Card>
 
-      <Card className="flex h-[32rem] flex-col">
+      <Card className={`flex h-[32rem] flex-col ${active ? "flex" : "hidden lg:flex"}`}>
         {!active ? (
           <div className="m-auto">
             <EmptyState
@@ -211,11 +253,10 @@ function DirectMessagesTab() {
         ) : (
           <>
             <div className="mb-3 flex items-center gap-2.5 border-b border-gray-100 pb-3">
+              <BackButton onClick={() => setActive(null)} />
               <Avatar user={active} />
               <div>
-                <p className="text-sm font-semibold text-black">
-                  {active.firstName} {active.lastName}
-                </p>
+                <p className="text-sm font-semibold text-black">{displayName(active)}</p>
                 <p className="text-xs text-gray-500">{ROLE_LABEL_SHORT[active.role] ?? active.role}</p>
               </div>
             </div>
@@ -227,19 +268,25 @@ function DirectMessagesTab() {
                     m.senderId === active.id ? "bg-brand-light text-black" : "ml-auto bg-black text-white"
                   }`}
                 >
-                  {m.body}
+                  <MessageBody text={m.body} />
                 </div>
               ))}
               {messages.length === 0 && <p className="text-sm text-gray-500">No messages yet — say hello.</p>}
               <div ref={bottomRef} />
             </div>
-            <form onSubmit={send} className="mt-3 flex gap-2">
+            {error && (
+              <div className="mt-2">
+                <ModerationError message={error.message} flaggedWord={error.flaggedWord} />
+              </div>
+            )}
+            <form onSubmit={send} className={`mt-3 flex gap-2 ${error ? "animate-shake" : ""}`}>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Type a message…"
                 className="flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
               />
+              <EmojiPicker onPick={(code) => setText((t) => `${t} :${code}: `)} />
               <Button type="submit" loading={sending} disabled={!text.trim()}>
                 Send
               </Button>
@@ -255,11 +302,21 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
+  const [classes, setClasses] = useState<Klass[]>([]);
+  const [studentClassId, setStudentClassId] = useState("");
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<DirectoryUser[]>([]);
   const [picked, setPicked] = useState<DirectoryUser[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/school/classes")
+      .then((r) => r.json())
+      .then((d) => setClasses(d.classes ?? []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -272,6 +329,7 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
 
   function toggleCategory(c: string) {
     setCategories((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+    if (c === "ALL_STUDENTS") setStudentClassId("");
   }
 
   function addPerson(u: DirectoryUser) {
@@ -280,20 +338,33 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
     setSearchResults([]);
   }
 
+  function fail(message: string) {
+    setError(message);
+    setShake(true);
+    setTimeout(() => setShake(false), 500);
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!name.trim()) return setError("Give the community a name.");
+    if (!name.trim()) return fail("Give the community a name.");
+    if (categories.length === 0 && picked.length === 0) return fail("Pick at least one category or person.");
     setSaving(true);
     const res = await fetch("/api/communities", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, description, categories, memberUserIds: picked.map((p) => p.id) }),
+      body: JSON.stringify({
+        name,
+        description,
+        categories,
+        studentClassId: studentClassId || undefined,
+        memberUserIds: picked.map((p) => p.id),
+      }),
     });
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      return setError(data.error ?? "Could not create community.");
+      return fail(data.error ?? "Could not create community.");
     }
     onCreated();
   }
@@ -307,7 +378,10 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <Card
+        className={`max-h-[90vh] w-full max-w-lg overflow-y-auto ${shake ? "animate-shake" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">New Community</h2>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5 text-sm font-medium text-black">
@@ -344,6 +418,23 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
                 </button>
               ))}
             </div>
+            {categories.includes("ALL_STUDENTS") && (
+              <label className="mt-2 flex flex-col gap-1.5 text-sm font-medium text-black">
+                Class (optional — leave as &quot;All classes&quot; to include every student)
+                <select
+                  value={studentClassId}
+                  onChange={(e) => setStudentClassId(e.target.value)}
+                  className="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
+                >
+                  <option value="">All classes</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
 
           <div>
@@ -400,14 +491,72 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
   );
 }
 
+function CommunityMembersPanel({
+  communityId,
+  members,
+  isAdmin,
+  onClose,
+  onChanged,
+}: {
+  communityId: string;
+  members: CommunityMember[];
+  isAdmin: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  async function toggleAdmin(userId: string, makeAdmin: boolean) {
+    await fetch(`/api/communities/${communityId}/members/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isAdmin: makeAdmin }),
+    });
+    onChanged();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <Card className="max-h-[80vh] w-full max-w-sm overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          Members ({members.length})
+        </h2>
+        <div className="space-y-1">
+          {members.map((m) => (
+            <div key={m.id} className="flex items-center gap-2.5 py-1.5">
+              <Avatar user={m.user} size={32} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-black">
+                  {displayName(m.user)} {m.isAdmin && <span className="ml-1 text-xs font-semibold text-brand-yellow">★ admin</span>}
+                </p>
+                <p className="text-xs text-gray-500">{ROLE_LABEL_SHORT[m.user.role] ?? m.user.role}</p>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => toggleAdmin(m.user.id, !m.isAdmin)}
+                  className="shrink-0 text-xs font-semibold text-black underline underline-offset-2"
+                >
+                  {m.isAdmin ? "Remove admin" : "Make admin"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [active, setActive] = useState<Community | null>(null);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [error, setError] = useState<{ message: string; flaggedWord?: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function load() {
@@ -421,11 +570,19 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
     load();
   }, []);
 
-  useEffect(() => {
+  async function loadThread() {
     if (!active) return;
-    fetch(`/api/communities/${active.id}/messages`)
-      .then((r) => r.json())
-      .then((d) => setMessages(d.messages ?? []));
+    const res = await fetch(`/api/communities/${active.id}/messages`);
+    const d = await res.json();
+    setMessages(d.messages ?? []);
+    setMembers(d.community?.members ?? []);
+    setIsAdmin(!!d.isAdmin);
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on selection change
+    loadThread();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   useEffect(() => {
@@ -436,22 +593,26 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
     e.preventDefault();
     if (!text.trim() || !active) return;
     setSending(true);
+    setError(null);
     const res = await fetch(`/api/communities/${active.id}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: text }),
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
       setText("");
       const refreshed = await fetch(`/api/communities/${active.id}/messages`);
       setMessages((await refreshed.json()).messages);
+    } else {
+      setError({ message: data.error ?? "Could not send that message.", flaggedWord: data.flaggedWord });
     }
     setSending(false);
   }
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-      <Card className="flex h-[32rem] flex-col p-0">
+      <Card className={`flex h-[32rem] flex-col p-0 ${active ? "hidden lg:flex" : "flex"}`}>
         <div className="flex items-center justify-between border-b border-gray-100 p-3">
           <span className="text-sm font-semibold text-black">Communities</span>
           {canCreate && (
@@ -487,36 +648,51 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
         </div>
       </Card>
 
-      <Card className="flex h-[32rem] flex-col">
+      <Card className={`flex h-[32rem] flex-col ${active ? "flex" : "hidden lg:flex"}`}>
         {!active ? (
           <div className="m-auto">
             <EmptyState pose="wave" title="Pick a community" description="Select a community to view its chat." />
           </div>
         ) : (
           <>
-            <div className="mb-3 border-b border-gray-100 pb-3">
-              <p className="text-sm font-semibold text-black">{active.name}</p>
-              {active.description && <p className="text-xs text-gray-500">{active.description}</p>}
+            <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <BackButton onClick={() => setActive(null)} />
+                <div>
+                  <p className="text-sm font-semibold text-black">{active.name}</p>
+                  {active.description && <p className="text-xs text-gray-500">{active.description}</p>}
+                </div>
+              </div>
+              <button onClick={() => setShowMembers(true)} className="shrink-0 text-xs font-semibold text-black underline underline-offset-2">
+                Members
+              </button>
             </div>
-            <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
               {messages.map((m) => (
-                <div key={m.id} className="max-w-[85%] rounded-2xl bg-brand-light px-3.5 py-2 text-sm text-black">
-                  <p className="mb-0.5 text-xs font-semibold text-gray-500">
-                    {m.sender.firstName} {m.sender.lastName}
-                  </p>
-                  {m.body}
+                <div key={m.id} className="flex items-start gap-2">
+                  <Avatar user={m.sender} size={30} />
+                  <div className="max-w-[80%] rounded-2xl bg-brand-light px-3.5 py-2 text-sm text-black">
+                    <p className="mb-0.5 text-xs font-semibold text-gray-500">{displayName(m.sender)}</p>
+                    <MessageBody text={m.body} />
+                  </div>
                 </div>
               ))}
               {messages.length === 0 && <p className="text-sm text-gray-500">No messages yet — say hello.</p>}
               <div ref={bottomRef} />
             </div>
-            <form onSubmit={send} className="mt-3 flex gap-2">
+            {error && (
+              <div className="mt-2">
+                <ModerationError message={error.message} flaggedWord={error.flaggedWord} />
+              </div>
+            )}
+            <form onSubmit={send} className={`mt-3 flex gap-2 ${error ? "animate-shake" : ""}`}>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Message the community…"
                 className="flex-1 rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm"
               />
+              <EmojiPicker onPick={(code) => setText((t) => `${t} :${code}: `)} />
               <Button type="submit" loading={sending} disabled={!text.trim()}>
                 Send
               </Button>
@@ -532,6 +708,15 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
             setShowCreate(false);
             load();
           }}
+        />
+      )}
+      {showMembers && active && (
+        <CommunityMembersPanel
+          communityId={active.id}
+          members={members}
+          isAdmin={isAdmin}
+          onClose={() => setShowMembers(false)}
+          onChanged={loadThread}
         />
       )}
     </div>

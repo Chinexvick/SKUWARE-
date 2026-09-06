@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { notifyUsers } from "@/lib/notifications";
+import { checkMessage } from "@/lib/moderation";
+import { displayName } from "@/lib/displayName";
 
 const sendSchema = z.object({ body: z.string().trim().min(1).max(2000) });
 
@@ -25,13 +27,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }),
     prisma.communityMessage.findMany({
       where: { communityId: id },
-      include: { sender: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
+      include: { sender: { select: { id: true, firstName: true, lastName: true, role: true, avatarUrl: true } } },
       orderBy: { createdAt: "asc" },
       take: 300,
     }),
   ]);
 
-  return NextResponse.json({ community, messages });
+  return NextResponse.json({ community, messages, isAdmin: membership.isAdmin });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -45,10 +47,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = sendSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
 
+  const moderation = checkMessage(parsed.data.body);
+  if (moderation.blocked) {
+    return NextResponse.json(
+      {
+        error: `The word "${moderation.flaggedWord}" is not allowed for the safety of all members.`,
+        flaggedWord: moderation.flaggedWord,
+      },
+      { status: 422 },
+    );
+  }
+
   const [message, community, otherMembers] = await Promise.all([
     prisma.communityMessage.create({
       data: { communityId: id, senderId: user.id, body: parsed.data.body },
-      include: { sender: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
+      include: { sender: { select: { id: true, firstName: true, lastName: true, role: true, avatarUrl: true } } },
     }),
     prisma.community.findUnique({ where: { id }, select: { name: true } }),
     prisma.communityMember.findMany({ where: { communityId: id, userId: { not: user.id } }, select: { userId: true } }),
@@ -56,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await notifyUsers(otherMembers.map((m) => m.userId), {
     title: community?.name ?? "Community message",
-    body: `${user.firstName}: ${parsed.data.body.slice(0, 120)}`,
+    body: `${displayName(user)}: ${parsed.data.body.slice(0, 120)}`,
     link: "/dashboard/messages",
   });
 

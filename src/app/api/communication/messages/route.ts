@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { messageSchema } from "@/lib/validation";
 import { notifyUsers } from "@/lib/notifications";
+import { checkMessage } from "@/lib/moderation";
+import { displayName } from "@/lib/displayName";
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -48,12 +50,23 @@ export async function POST(req: NextRequest) {
   const recipient = await prisma.user.findFirst({ where: { id: recipientId, schoolId: user.schoolId! } });
   if (!recipient) return NextResponse.json({ error: "Recipient not found at this school." }, { status: 404 });
 
+  const moderation = checkMessage(text);
+  if (moderation.blocked) {
+    return NextResponse.json(
+      {
+        error: `The word "${moderation.flaggedWord}" is not allowed for the safety of all members.`,
+        flaggedWord: moderation.flaggedWord,
+      },
+      { status: 422 },
+    );
+  }
+
   const message = await prisma.message.create({
     data: { schoolId: user.schoolId!, senderId: user.id, recipientId, body: text },
   });
 
   await notifyUsers([recipientId], {
-    title: `New message from ${user.firstName} ${user.lastName}`,
+    title: `New message from ${displayName(user)}`,
     body: text.slice(0, 140),
     link: "/dashboard/messages",
   });

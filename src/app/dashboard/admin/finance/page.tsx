@@ -1,6 +1,8 @@
 import { requireUser } from "@/lib/auth/guard";
 import { NAV_ITEMS, ROLE_LABEL } from "@/lib/nav";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { NoCollectionPrompt } from "@/components/finance/NoCollectionPrompt";
+import { PayoutSettings } from "@/components/finance/PayoutSettings";
 import { FeeStructuresClient } from "./FeeStructuresClient";
 
 export default async function FinancePage() {
@@ -13,6 +15,8 @@ export default async function FinancePage() {
       userName={`${user.firstName} ${user.lastName}`}
       navItems={NAV_ITEMS[user.role]}
     >
+      <NoCollectionPrompt />
+      <PayoutSettings />
       <FeeStructuresClient />
     </DashboardShell>
   );

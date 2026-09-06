@@ -554,6 +554,7 @@ model CommunityMember {
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isAdmin     Boolean   @default(false)
   joinedAt    DateTime  @default(now())
 
   @@unique([communityId, userId])

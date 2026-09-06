@@ -3,6 +3,7 @@ import { NAV_ITEMS, ROLE_LABEL } from "@/lib/nav";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Greeting } from "@/components/layout/Greeting";
 import { StatCard } from "@/components/ui/Card";
+import { NoCollectionPrompt } from "@/components/finance/NoCollectionPrompt";
 import { prisma } from "@/lib/db";
 
 export default async function BursarDashboardPage() {
@@ -28,7 +29,10 @@ export default async function BursarDashboardPage() {
       navItems={NAV_ITEMS[user.role]}
     >
       <Greeting firstName={user.firstName} />
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6">
+        <NoCollectionPrompt />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Fees Collected" value={`₦${collected.toLocaleString("en-NG")}`} accent="positive" />
         <StatCard label="Outstanding" value={`₦${outstanding.toLocaleString("en-NG")}`} accent={outstanding > 0 ? "negative" : "positive"} />
         <StatCard label="Transactions Today" value={transactionsToday} />
