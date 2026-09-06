@@ -342,6 +342,9 @@ model Term {
   endDate   DateTime
   isCurrent Boolean         @default(false)
 
+  resultsPublished   Boolean   @default(false)
+  resultsPublishedAt DateTime?
+
   assignments         TeacherSubjectAssignment[]
   scores              Score[]
   comments            SubjectComment[]

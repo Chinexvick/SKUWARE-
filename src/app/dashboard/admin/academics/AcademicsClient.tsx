@@ -13,6 +13,7 @@ interface Term {
   startDate: string;
   endDate: string;
   isCurrent: boolean;
+  resultsPublished: boolean;
 }
 interface Session {
   id: string;
@@ -94,6 +95,7 @@ function SessionsPanel({ canEdit }: { canEdit: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", startDate: "", endDate: "" });
   const [termForm, setTermForm] = useState<Record<string, { name: string; startDate: string; endDate: string }>>({});
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -129,6 +131,18 @@ function SessionsPanel({ canEdit }: { canEdit: boolean }) {
     load();
   }
 
+  async function togglePublish(termId: string, publish: boolean) {
+    setPublishing(termId);
+    setError(null);
+    const { ok, data } = await api(`/api/academics/terms/${termId}/publish-results`, {
+      method: "PATCH",
+      body: JSON.stringify({ publish }),
+    });
+    setPublishing(null);
+    if (!ok) return setError((data as { error: string }).error ?? "Could not update publish status.");
+    load();
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-4">
@@ -152,9 +166,28 @@ function SessionsPanel({ canEdit }: { canEdit: boolean }) {
               </div>
               <ul className="mb-3 divide-y divide-gray-100">
                 {s.terms.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between py-2 text-sm">
-                    <span>{t.name}</span>
-                    {t.isCurrent && <span className="text-xs font-semibold text-black">Current</span>}
+                  <li key={t.id} className="flex flex-col gap-2 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                    <span className="flex items-center gap-2">
+                      {t.name}
+                      {t.isCurrent && <span className="text-xs font-semibold text-black">(current)</span>}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          t.resultsPublished ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {t.resultsPublished ? "Results published" : "Results in draft"}
+                      </span>
+                    </span>
+                    {canEdit && (
+                      <Button
+                        variant="secondary"
+                        className="w-full px-2.5 py-1 text-xs sm:w-auto"
+                        loading={publishing === t.id}
+                        onClick={() => togglePublish(t.id, !t.resultsPublished)}
+                      >
+                        {t.resultsPublished ? "Unpublish results" : "Publish results"}
+                      </Button>
+                    )}
                   </li>
                 ))}
                 {s.terms.length === 0 && <li className="py-2 text-sm text-gray-400">No terms yet.</li>}

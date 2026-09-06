@@ -39,6 +39,7 @@ export function ReportCardView({ studentId }: { studentId: string }) {
   const [report, setReport] = useState<ReportCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notPublished, setNotPublished] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(async () => {
@@ -58,8 +59,11 @@ export function ReportCardView({ studentId }: { studentId: string }) {
     if (!termId) return;
     const t = setTimeout(async () => {
       setError(null);
+      setNotPublished(false);
+      setReport(null);
       const { ok, data } = await api<ReportCard>(`/api/academics/report-card?studentId=${studentId}&termId=${termId}`);
       if (ok) setReport(data as ReportCard);
+      else if ((data as { notPublished?: boolean }).notPublished) setNotPublished(true);
       else setError((data as { error: string }).error ?? "Could not load report card.");
     }, 0);
     return () => clearTimeout(t);
@@ -84,11 +88,17 @@ export function ReportCardView({ studentId }: { studentId: string }) {
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
+      {notPublished && (
+        <Card className="text-center text-sm text-gray-500">
+          The school hasn&apos;t published results for this term yet. Check back once your school administrator
+          releases them.
+        </Card>
+      )}
 
       {report && (
         <>
           {report.subjects.length === 0 ? (
-            <p className="text-sm text-gray-500">No results have been published for this term yet.</p>
+            <p className="text-sm text-gray-500">No scores have been recorded for this term yet.</p>
           ) : (
             <>
               <Card className="mb-4 overflow-x-auto p-0">

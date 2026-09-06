@@ -21,8 +21,10 @@ export async function GET(req: NextRequest) {
   const student = await prisma.student.findFirst({ where: { id: studentId, schoolId: user.schoolId! } });
   if (!student) return NextResponse.json({ error: "Student not found." }, { status: 404 });
 
-  // Authorization: staff can view any student at their school; a parent only
-  // their linked children; a student only themself.
+  // Authorization: staff can view any student at their school (including
+  // before publish, so they can review before releasing); a parent only
+  // their linked children, and only once results are published; a student
+  // only themself, same publish gate.
   if (STAFF_VIEW_ROLES.includes(user.role)) {
     // allowed
   } else if (user.role === "PARENT") {
@@ -31,9 +33,15 @@ export async function GET(req: NextRequest) {
       ? await prisma.studentParentLink.findFirst({ where: { parentId: parentProfile.id, studentId } })
       : null;
     if (!linked) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    if (!term.resultsPublished) {
+      return NextResponse.json({ error: "Results for this term have not been published yet.", notPublished: true }, { status: 403 });
+    }
   } else if (user.role === "STUDENT") {
     const studentProfile = await prisma.studentProfile.findUnique({ where: { userId: user.id }, include: { student: true } });
     if (studentProfile?.student?.id !== studentId) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
+    if (!term.resultsPublished) {
+      return NextResponse.json({ error: "Results for this term have not been published yet.", notPublished: true }, { status: 403 });
+    }
   } else {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
@@ -91,7 +99,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     student: { id: student.id, firstName: student.firstName, lastName: student.lastName, admissionNo: student.admissionNo },
-    term: { id: term.id, name: term.name },
+    term: { id: term.id, name: term.name, resultsPublished: term.resultsPublished },
     components,
     subjects,
     overallPercentage,
