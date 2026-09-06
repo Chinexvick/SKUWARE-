@@ -78,9 +78,11 @@ export function InvoicesClient() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-sm font-semibold text-gray-500">{invoices.length} invoices</h2>
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "Cancel" : "New invoice"}</Button>
+        <Button className="w-full sm:w-auto" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? "Cancel" : "New invoice"}
+        </Button>
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
