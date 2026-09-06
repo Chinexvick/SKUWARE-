@@ -26,6 +26,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Documents", href: "/dashboard/admin/documents" },
     { label: "Gate Access", href: "/dashboard/admin/gate-access" },
     { label: "Communication", href: "/dashboard/admin/communication" },
+    { label: "Analytics", href: "/dashboard/admin/analytics" },
   ],
   PRINCIPAL: [
     { label: "Overview", href: "/dashboard/admin" },
@@ -36,12 +37,14 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Admissions", href: "/dashboard/admin/admissions" },
     { label: "Documents", href: "/dashboard/admin/documents" },
     { label: "Communication", href: "/dashboard/admin/communication" },
+    { label: "Analytics", href: "/dashboard/admin/analytics" },
   ],
   VICE_PRINCIPAL: [
     { label: "Overview", href: "/dashboard/admin" },
     { label: "Students", href: "/dashboard/admin/students" },
     { label: "Academics", href: "/dashboard/admin/academics" },
     { label: "Communication", href: "/dashboard/admin/communication" },
+    { label: "Analytics", href: "/dashboard/admin/analytics" },
   ],
   STAFF: [
     { label: "Overview", href: "/dashboard/admin" },
