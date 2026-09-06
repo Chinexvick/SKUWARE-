@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Assignment {
   id: string;
@@ -45,7 +46,7 @@ export function StudentAssignmentsClient() {
     load();
   }
 
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (loading) return <LoadingSpinner size="sm" className="py-10" />;
   if (assignments.length === 0) return <p className="text-sm text-gray-500">No assignments yet.</p>;
 
   return (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Question {
   id: string;
@@ -56,7 +57,7 @@ export function QuestionsClient({ defaultStatus }: { defaultStatus?: string }) {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <LoadingSpinner size="sm" className="py-10" />
       ) : questions.length === 0 ? (
         <p className="text-sm text-gray-500">No questions found.</p>
       ) : (

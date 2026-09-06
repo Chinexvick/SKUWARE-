@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, StatCard } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface AttendanceRecord {
   id: string;
@@ -30,7 +31,7 @@ export function AttendanceHistory({ studentId }: { studentId: string }) {
     return () => clearTimeout(t);
   }, [studentId]);
 
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (loading) return <LoadingSpinner size="sm" className="py-10" />;
 
   const total = records.length;
   const present = records.filter((r) => r.status === "PRESENT").length;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, StatCard } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Analytics {
   attendance: { rate: number | null; present: number; late: number; absent: number; sampleSize: number };
@@ -40,7 +41,7 @@ export function AnalyticsClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="text-sm text-gray-500">Loading analytics…</p>;
+  if (loading) return <LoadingSpinner size="sm" label="Loading analytics…" className="py-10" />;
   if (!data) return <p className="text-sm text-gray-500">Could not load analytics.</p>;
 
   const maxEnrollment = Math.max(1, ...data.enrollment.trend.map((m) => m.count));

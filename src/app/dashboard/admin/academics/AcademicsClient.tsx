@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AssignmentsPanel } from "./AssignmentsPanel";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Term {
   id: string;
@@ -133,7 +134,7 @@ function SessionsPanel({ canEdit }: { canEdit: boolean }) {
       <div className="lg:col-span-2 space-y-4">
         <ErrorText error={error} />
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <LoadingSpinner size="sm" className="py-10" />
         ) : sessions.length === 0 ? (
           <p className="text-sm text-gray-500">No academic sessions yet.</p>
         ) : (
@@ -252,7 +253,7 @@ function ClassesPanel({ canEdit }: { canEdit: boolean }) {
       <div className="lg:col-span-2 space-y-4">
         <ErrorText error={error} />
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <LoadingSpinner size="sm" className="py-10" />
         ) : classes.length === 0 ? (
           <p className="text-sm text-gray-500">No classes yet.</p>
         ) : (
@@ -335,7 +336,7 @@ function DepartmentsPanel({ canEdit }: { canEdit: boolean }) {
         <ErrorText error={error} />
         <Card>
           {loading ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <LoadingSpinner size="sm" className="py-10" />
           ) : departments.length === 0 ? (
             <p className="text-sm text-gray-500">No departments yet.</p>
           ) : (
@@ -403,7 +404,7 @@ function SubjectsPanel({ canEdit }: { canEdit: boolean }) {
         <ErrorText error={error} />
         <Card>
           {loading ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <LoadingSpinner size="sm" className="py-10" />
           ) : subjects.length === 0 ? (
             <p className="text-sm text-gray-500">No subjects yet.</p>
           ) : (

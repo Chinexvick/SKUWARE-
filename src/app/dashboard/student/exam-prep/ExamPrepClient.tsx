@@ -61,36 +61,24 @@ function formatClock(totalSeconds: number): string {
 }
 
 export function ExamPrepClient() {
-  const [stage, setStage] = useState<Stage>("setup");
-  const [examName, setExamName] = useState<(typeof EXAMS)[number]>("JAMB");
-  const [subject, setSubject] = useState("Mathematics");
+  // Restore an in-progress session up front (survives refresh/network drop)
+  // via lazy initializers, rather than setting state from inside an effect.
+  const [restored] = useState(() => loadSaved());
+  const [stage, setStage] = useState<Stage>(restored ? "quiz" : "setup");
+  const [examName, setExamName] = useState<(typeof EXAMS)[number]>(restored?.examName ?? "JAMB");
+  const [subject, setSubject] = useState(restored?.subject ?? "Mathematics");
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [count, setCount] = useState(10);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [marked, setMarked] = useState<Set<string>>(new Set());
+  const [questions, setQuestions] = useState<Question[]>(restored?.questions ?? []);
+  const [answers, setAnswers] = useState<Record<string, string>>(restored?.answers ?? {});
+  const [marked, setMarked] = useState<Set<string>>(new Set(restored?.marked ?? []));
   const [current, setCurrent] = useState(0);
-  const [deadline, setDeadline] = useState<number | null>(null);
+  const [deadline, setDeadline] = useState<number | null>(restored?.deadline ?? null);
   const [remaining, setRemaining] = useState(0);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const submittedRef = useRef(false);
-
-  // Restore an in-progress session on mount (survives refresh/network drop).
-  useEffect(() => {
-    const saved = loadSaved();
-    if (saved) {
-      setExamName(saved.examName);
-      setSubject(saved.subject);
-      setQuestions(saved.questions);
-      setAnswers(saved.answers);
-      setMarked(new Set(saved.marked));
-      setDeadline(saved.deadline);
-      setStage("quiz");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Persist on every change while a quiz is active.
   useEffect(() => {

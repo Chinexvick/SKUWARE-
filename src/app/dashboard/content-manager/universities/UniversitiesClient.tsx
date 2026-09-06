@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface University {
   id: string;
@@ -51,7 +52,7 @@ export function UniversitiesClient() {
       <div className="lg:col-span-2">
         {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>}
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <LoadingSpinner size="sm" className="py-10" />
         ) : universities.length === 0 ? (
           <p className="text-sm text-gray-500">No universities added yet.</p>
         ) : (

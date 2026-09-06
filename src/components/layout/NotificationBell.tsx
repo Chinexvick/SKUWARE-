@@ -39,6 +39,7 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount
     load();
     const id = setInterval(load, 45000);
     return () => clearInterval(id);

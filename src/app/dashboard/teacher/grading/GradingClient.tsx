@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Student {
   id: string;
@@ -117,7 +118,7 @@ export function GradingClient() {
   if (!assignmentId) {
     return <p className="text-sm text-gray-500">Choose a class from &quot;My Classes&quot; to enter scores.</p>;
   }
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (loading) return <LoadingSpinner size="sm" className="py-10" />;
   if (error) return <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p>;
 
   return (

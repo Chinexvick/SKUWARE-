@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Klass {
   id: string;
@@ -108,7 +109,7 @@ export function AttendanceClient() {
       {!classId ? (
         <p className="text-sm text-gray-500">Choose a class to take or review attendance.</p>
       ) : loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <LoadingSpinner size="sm" className="py-10" />
       ) : (
         <>
           <Card className="overflow-x-auto p-0">

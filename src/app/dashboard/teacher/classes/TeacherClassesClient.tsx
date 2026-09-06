@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface Assignment {
   id: string;
@@ -26,7 +27,7 @@ export function TeacherClassesClient() {
     return () => clearTimeout(t);
   }, []);
 
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (loading) return <LoadingSpinner size="sm" className="py-10" />;
   if (assignments.length === 0) return <p className="text-sm text-gray-500">You have no class assignments yet.</p>;
 
   return (

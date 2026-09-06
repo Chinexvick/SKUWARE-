@@ -3,6 +3,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 interface StaffMember {
   id: string;
@@ -67,7 +68,7 @@ export function MessagesClient() {
       <Card className="h-fit">
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Staff</h3>
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <LoadingSpinner size="sm" className="py-10" />
         ) : (
           <ul className="space-y-1">
             {staff.map((s) => (
