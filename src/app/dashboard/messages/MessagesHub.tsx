@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface DirectoryUser {
   id: string;
@@ -168,9 +169,7 @@ function DirectMessagesTab() {
           ) : loading ? (
             <LoadingSpinner size="sm" className="py-10" />
           ) : conversations.length === 0 ? (
-            <p className="p-4 text-center text-sm text-gray-500">
-              No conversations yet — search a name above to say hello.
-            </p>
+            <EmptyState pose="empty" title="No conversations yet" description="Search a name above to say hello." className="py-8" />
           ) : (
             conversations.map((c) => (
               <button
@@ -202,10 +201,13 @@ function DirectMessagesTab() {
 
       <Card className="flex h-[32rem] flex-col">
         {!active ? (
-          <p className="m-auto max-w-xs text-center text-sm text-gray-500">
-            Search for anyone in your school — a teacher, parent, student, or staff member — to start a
-            conversation.
-          </p>
+          <div className="m-auto">
+            <EmptyState
+              pose="wave"
+              title="Say hello"
+              description="Search for anyone in your school — a teacher, parent, student, or staff member — to start a conversation."
+            />
+          </div>
         ) : (
           <>
             <div className="mb-3 flex items-center gap-2.5 border-b border-gray-100 pb-3">
@@ -462,9 +464,12 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
           {loading ? (
             <LoadingSpinner size="sm" className="py-10" />
           ) : communities.length === 0 ? (
-            <p className="p-4 text-center text-sm text-gray-500">
-              {canCreate ? "Create a community to start a group chat." : "You're not in any communities yet."}
-            </p>
+            <EmptyState
+              pose="empty"
+              title="No communities yet"
+              description={canCreate ? "Create a community to start a group chat." : "You're not in any communities yet."}
+              className="py-8"
+            />
           ) : (
             communities.map((c) => (
               <button
@@ -484,7 +489,9 @@ function CommunitiesTab({ canCreate }: { canCreate: boolean }) {
 
       <Card className="flex h-[32rem] flex-col">
         {!active ? (
-          <p className="m-auto max-w-xs text-center text-sm text-gray-500">Select a community to view its chat.</p>
+          <div className="m-auto">
+            <EmptyState pose="wave" title="Pick a community" description="Select a community to view its chat." />
+          </div>
         ) : (
           <>
             <div className="mb-3 border-b border-gray-100 pb-3">

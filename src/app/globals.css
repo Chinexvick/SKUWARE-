@@ -89,6 +89,40 @@ body {
   animation: fade-in 0.15s ease-out;
 }
 
+@keyframes mascot-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes mascot-wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-18deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+.animate-mascot-float {
+  animation: mascot-float 3s ease-in-out infinite;
+}
+.animate-mascot-wave {
+  animation: mascot-wave 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-mascot-float,
+  .animate-mascot-wave {
+    animation: none;
+  }
+}
+
 /* Every data table in the app follows the same thead/tbody shape — give row
    hover for free instead of adding it by hand to every list screen. */
 tbody tr {

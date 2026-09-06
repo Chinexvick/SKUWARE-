@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface ParentRecord {
   id: string;
@@ -131,8 +132,8 @@ export function ParentsClient({ canEdit }: { canEdit: boolean }) {
               </tr>
             ) : parents.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
-                  No parents yet.
+                <td colSpan={4}>
+                  <EmptyState pose="empty" title="No parents yet" />
                 </td>
               </tr>
             ) : (

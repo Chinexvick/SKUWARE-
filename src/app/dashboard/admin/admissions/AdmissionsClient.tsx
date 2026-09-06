@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Klass {
   id: string;
@@ -133,7 +134,9 @@ export function AdmissionsClient() {
               </tr>
             ) : applications.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-500">No applications yet.</td>
+                <td colSpan={5}>
+                  <EmptyState pose="empty" title="No applications yet" />
+                </td>
               </tr>
             ) : (
               applications.map((a) => (

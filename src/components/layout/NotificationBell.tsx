@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Notification {
   id: string;
@@ -97,7 +98,7 @@ export function NotificationBell() {
             {!loaded ? (
               <p className="px-4 py-6 text-center text-sm text-gray-500">Loading…</p>
             ) : notifications.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-gray-500">No notifications yet.</p>
+              <EmptyState pose="sleep" title="All quiet" description="No notifications yet." className="py-6" />
             ) : (
               notifications.map((n) => (
                 <Link

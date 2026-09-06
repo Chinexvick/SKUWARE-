@@ -4,6 +4,7 @@ import { useEffect, useState, FormEvent } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface Department {
   id: string;
@@ -156,8 +157,8 @@ export function StaffClient({ canEdit }: { canEdit: boolean }) {
               </tr>
             ) : staff.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
-                  No staff yet.
+                <td colSpan={5}>
+                  <EmptyState pose="empty" title="No staff yet" />
                 </td>
               </tr>
             ) : (

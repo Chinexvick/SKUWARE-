@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AuthCard } from "@/components/layout/AuthCard";
+import { Mascot } from "@/components/ui/Mascot";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -72,9 +73,12 @@ export default function SignupPage() {
         </div>
 
         {success ? (
-          <p className="rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-            School created successfully. Redirecting you to sign in…
-          </p>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Mascot pose="celebrate" size={100} />
+            <p className="rounded-lg bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+              School created successfully. Redirecting you to sign in…
+            </p>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
             <Input

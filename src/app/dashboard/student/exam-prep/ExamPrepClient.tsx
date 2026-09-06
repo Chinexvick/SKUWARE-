@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Mascot } from "@/components/ui/Mascot";
 
 interface Question {
   id: string;
@@ -292,7 +293,8 @@ export function ExamPrepClient() {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
         <Card className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Score</p>
+          <Mascot pose={result.score / result.totalQuestions >= 0.5 ? "celebrate" : "error"} size={90} className="mx-auto" />
+          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Score</p>
           <p className="text-3xl font-bold text-black">
             {result.score} / {result.totalQuestions}
           </p>
